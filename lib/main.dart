@@ -134,6 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
 
             // This will be the list of available printer models to print with.
+            const Text("Select printer model"),
             DropdownButton<Model>(
               value: _selectedModel, // Sets the active printer, this will update as the user makes a choice.
               icon: const Icon(Icons.arrow_downward),
@@ -165,6 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
             // Paper Selection Dropdown
             // This sections follows the same format as the one above using the labels
             // as the list.
+            const Text("Select label"),
             DropdownButton<ALabelName>(
               key: ValueKey<String>(_selectedModel.getName()),
               value: _selectedPaper,
@@ -198,6 +200,7 @@ class _MyHomePageState extends State<MyHomePage> {
             // Fit Selection Dropdown
             // This sections follows the same format as the one above using the fit options
             // as the list.
+            const Text("Select print mode"),
             DropdownButton<PrintMode>(
               value: _selectedFit,
               icon: const Icon(Icons.arrow_downward),
@@ -225,6 +228,7 @@ class _MyHomePageState extends State<MyHomePage> {
             // Halftone selection
             // This sections follows the same format as the one above using the halftone options
             // as the list.
+            const Text("Select halftone"),
             DropdownButton<Halftone>(
               value: _selectedHalftone,
               icon: const Icon(Icons.arrow_downward),

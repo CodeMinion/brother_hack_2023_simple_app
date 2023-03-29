@@ -6,6 +6,7 @@ import 'package:another_brother/label_info.dart';
 import 'package:another_brother/printer_info.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,7 +38,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   // Tracks the currently selected printer.
   Model _selectedModel = Model.QL_1110NWB;
 
@@ -83,6 +83,21 @@ class _MyHomePageState extends State<MyHomePage> {
   // Bytes of the selected image that was picked by the user.
   Uint8List? _selectedFileBytes;
 
+  // Controller for the number of copies field.
+  final TextEditingController _numberOfCopiesController =
+      TextEditingController();
+  int _numberOfCopiesToPrint = 1;
+
+  static const String FILE_TYPE_IMG = "image";
+  static const String FILE_TYPE_PDF = "pdf";
+
+  // List of options of files to select.
+  final List<String> _fileOptions = [FILE_TYPE_IMG, FILE_TYPE_PDF];
+
+  // Tracks the selection of the file type.
+  late String _currentFileSelectionType;
+
+  PlatformFile? _selectedPdfFile;
   @override
   void initState() {
     super.initState();
@@ -90,6 +105,12 @@ class _MyHomePageState extends State<MyHomePage> {
     // one for the default printer by selecting the first paper for that printer
     // from the paper choices map.
     _selectedPaper = _paperChoices[_selectedModel]!.first;
+
+    // We set the default initial value on the controller.
+    _numberOfCopiesController.text = "$_numberOfCopiesToPrint";
+
+    // We set the default selection to the first item in our file options list.
+    _currentFileSelectionType = _fileOptions[0];
   }
 
   @override
@@ -102,41 +123,105 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // In order to allow the user to pick an image we'll user a gesture
-            // detector to detect user taps.
-            // When the user taps we'll open up the image picker.
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                // Open the file picker.
-                _pickImage();
-              },
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                    border: Border.all(
-                        color: Colors.black,
-                        width: 2.0,
-                        style: BorderStyle.solid)),
-                child: Stack(
-                  children: [
-                    // Once the image is selected will display it ot the user.
-                    if (_selectedFileBytes != null) ...[
-                      Center(child: Image.memory(_selectedFileBytes!))
-                    ] else ...[
-                      // If no image is selected we'll just display a text prompting the user to do so.
-                      const Center(child: Text("Tap to pick file")),
-                    ]
-                  ],
-                ),
+            const Text("Select file type"),
+            DropdownButton<String>(
+              value: _currentFileSelectionType,
+              // Sets the active printer, this will update as the user makes a choice.
+              icon: const Icon(Icons.arrow_downward),
+              elevation: 16,
+              style: const TextStyle(color: Colors.deepPurple),
+              underline: Container(
+                height: 2,
+                color: Colors.deepPurpleAccent,
               ),
+              onChanged: (String? value) {
+                // This is called when the user selects an item.
+                setState(() {
+                  // When the user picks a file type we track it to be used later in the app..
+                  _currentFileSelectionType = value!;
+                });
+              },
+              // For every file type we'll create a dropdown item for the user.
+              items: _fileOptions.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(
+                      value), // We'll show the user the name of the file type to pick from.
+                );
+              }).toList(),
             ),
 
+            // If we have selected PDF as a file option we show the following control.
+            if (_currentFileSelectionType == FILE_TYPE_PDF) ...[
+              // In order to allow the user to pick a PDF file we'll user a gesture
+              // detector to detect user taps.
+              // When the user taps we'll open up the image picker.
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  // Open the file picker.
+                  _pickPdfFile();
+                },
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Colors.black,
+                          width: 2.0,
+                          style: BorderStyle.solid)),
+                  child: Stack(
+                    children: [
+                      // Once the image is selected will display it ot the user.
+                      if (_selectedPdfFile != null) ...[
+                        const Center(child: Text("PDF Selected!"))
+                      ] else ...[
+                        // If no PDF is selected we'll just display a text prompting the user to do so.
+                        const Center(child: Text("Tap to pick PDF file")),
+                      ]
+                    ],
+                  ),
+                ),
+              ),
+            ]
+            // For all other we'll show the image selection controls.
+            else ...[
+              // In order to allow the user to pick an image we'll user a gesture
+              // detector to detect user taps.
+              // When the user taps we'll open up the image picker.
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  // Open the file picker.
+                  _pickImage();
+                },
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Colors.black,
+                          width: 2.0,
+                          style: BorderStyle.solid)),
+                  child: Stack(
+                    children: [
+                      // Once the image is selected will display it ot the user.
+                      if (_selectedFileBytes != null) ...[
+                        Center(child: Image.memory(_selectedFileBytes!))
+                      ] else ...[
+                        // If no image is selected we'll just display a text prompting the user to do so.
+                        const Center(child: Text("Tap to pick file")),
+                      ]
+                    ],
+                  ),
+                ),
+              ),
+            ],
             // This will be the list of available printer models to print with.
             const Text("Select printer model"),
             DropdownButton<Model>(
-              value: _selectedModel, // Sets the active printer, this will update as the user makes a choice.
+              value: _selectedModel,
+              // Sets the active printer, this will update as the user makes a choice.
               icon: const Icon(Icons.arrow_downward),
               elevation: 16,
               style: const TextStyle(color: Colors.deepPurple),
@@ -158,7 +243,8 @@ class _MyHomePageState extends State<MyHomePage> {
               items: _printers.map<DropdownMenuItem<Model>>((Model value) {
                 return DropdownMenuItem<Model>(
                   value: value,
-                  child: Text(value.getName()), // We'll show the user the printer name.
+                  child: Text(
+                      value.getName()), // We'll show the user the printer name.
                 );
               }).toList(),
             ),
@@ -252,11 +338,34 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               }).toList(),
             ),
+            // Filed for capturing how many copies to print.
+            SizedBox(
+              width: 200,
+              child: TextField(
+                onChanged: (String value) {
+                  if (value.isEmpty) {
+                    _numberOfCopiesToPrint = 1;
+                  } else {
+                    _numberOfCopiesToPrint = int.parse(value);
+                  }
+                },
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly
+                ],
+                controller: _numberOfCopiesController,
+                decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Copies',
+                    label: Text("How many copies")),
+              ),
+            ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _print, // When the FAB is pressed we'll start the printing process.
+        onPressed: _print,
+        // When the FAB is pressed we'll start the printing process.
         tooltip: 'Print',
         child: const Icon(Icons.print),
       ), // This trailing comma makes auto-formatting nicer for build methods.
@@ -276,6 +385,8 @@ class _MyHomePageState extends State<MyHomePage> {
     printInfo.port = Port.NET;
     // Set the label type to the one we selected.
     printInfo.labelNameIndex = _getOrdinalFromLabel(_selectedPaper);
+    // Set the number of copies to be printed.
+    printInfo.numberOfCopies = _numberOfCopiesToPrint;
 
     // Set the printer info so we can use the SDK to get the printers.
     await printer.setPrinterInfo(printInfo);
@@ -283,7 +394,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // Get a list of printers with my model available in the network.
     List<NetPrinter> printers =
         await printer.getNetPrinters([_selectedModel.getName()]);
-
 
     // If no printer is found we'll notify the user using a snackbard.
     if (printers.isEmpty) {
@@ -300,15 +410,26 @@ class _MyHomePageState extends State<MyHomePage> {
     // Get IP Address from the first printer found.
     printInfo.ipAddress = printers.single.ipAddress;
 
-    // Convert the bytes of the image we selected into an image object we can send to
-    // another_brother to be printed.
-    var imageToPrint = await getImageFromBytes(_selectedFileBytes!);
+    // If we have an image file selected, we'll print it using the image API from another_brother.
+    if (_selectedFileBytes != null) {
+      // Convert the bytes of the image we selected into an image object we can send to
+      // another_brother to be printed.
+      var imageToPrint = await getImageFromBytes(_selectedFileBytes!);
 
-    // Update the printer with the latest print settings.
-    printer.setPrinterInfo(printInfo);
+      // Update the printer with the latest print settings.
+      printer.setPrinterInfo(printInfo);
 
-    // Send the image to be printer.
-    printer.printImage(imageToPrint);
+      // Send the image to be printer.
+      printer.printImage(imageToPrint);
+    }
+    else if (_selectedPdfFile != null) {
+
+      // Update the printer with the latest print settings.
+      printer.setPrinterInfo(printInfo);
+
+      // Send the path of the PDF file to be printed.
+      printer.printPdfFile(_selectedPdfFile!.path!, 1);
+    }
   }
 
   ///
@@ -329,14 +450,40 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
-      type: FileType.custom, // Set to custom so we may specify the file formats.
-      allowedExtensions: ['jpg', 'png'], // Allow only images in the jpg or png format.
+      type: FileType.custom,
+      // Set to custom so we may specify the file formats.
+      allowedExtensions: [
+        'jpg',
+        'png'
+      ], // Allow only images in the jpg or png format.
     );
 
     if (result != null) {
       // If there is a result will select the first file and read it into memory.
       setState(() {
         _selectedFileBytes = result.files[0].bytes;
+      });
+    } else {
+      // User canceled the picker
+    }
+  }
+
+  ///
+  /// Helper method to pick a PDF file.
+  Future<void> _pickPdfFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.custom,
+      // Set to custom so we may specify the file formats.
+      allowedExtensions: [
+        'pdf',
+      ], // Allow only images in the jpg or png format.
+    );
+
+    if (result != null) {
+      // If there is a result will select the first file and read it into memory.
+      setState(() {
+        _selectedPdfFile = result.files[0];
       });
     } else {
       // User canceled the picker

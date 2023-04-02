@@ -86,6 +86,25 @@ class _MyHomePageState extends State<MyHomePage> {
   // Bytes of the selected image that was picked by the user.
   Uint8List? _selectedFileBytes;
 
+  // Selected color processing for the scanner.
+  late Map<String, ColorProcessing> _selectedColorProcessing;
+  // List of color processing options available for the user to pick from.
+  final List<Map<String, ColorProcessing>> _colorProcessingOptions =  [
+    {"Black And White": ColorProcessing.BlackAndWhite},
+    {"FullColor": ColorProcessing.FullColor},
+    {"Grayscale": ColorProcessing.Grayscale}
+  ];
+
+  late Map<String, Resolution> _selectedScanResolution;
+
+  final List<Map<String,Resolution>> _scanResolutionOptions = [
+    // To make it easy to control what is shown to the user we'll track each option as a map
+    // where the key will be what is shown to the user and the value is the resolution
+      {"Low": Resolution(120, 120)},
+    {"Medium": Resolution(200, 200)},
+  {"High": Resolution(200, 200)},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -93,6 +112,11 @@ class _MyHomePageState extends State<MyHomePage> {
     // one for the default printer by selecting the first paper for that printer
     // from the paper choices map.
     _selectedPaper = _paperChoices[_selectedModel]!.first;
+
+    // Make the selected color option to be the first in the list.
+    _selectedColorProcessing = _colorProcessingOptions.first;
+    // Make the first option selected by default in the resolution options.
+    _selectedScanResolution = _scanResolutionOptions.first;
   }
 
   @override
@@ -134,6 +158,62 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 ),
               ),
+            ),
+
+            // This will be the list of available color processing modes to scan with.
+            const Text("Select scanner color processing"),
+            DropdownButton<Map<String, ColorProcessing>>(
+              value: _selectedColorProcessing, // Sets the option, this will update as the user makes a choice.
+              icon: const Icon(Icons.arrow_downward),
+              elevation: 16,
+              style: const TextStyle(color: Colors.deepPurple),
+              underline: Container(
+                height: 2,
+                color: Colors.deepPurpleAccent,
+              ),
+              onChanged: (Map<String, ColorProcessing>? value) {
+                // This is called when the user selects an item.
+                setState(() {
+                  // When the user picks a color processing option we track it to use it later..
+                  _selectedColorProcessing = value!;
+
+                });
+              },
+              // For every printer model we'll create a dropdown item for the user.
+              items: _colorProcessingOptions.map<DropdownMenuItem<Map<String, ColorProcessing>>>((Map<String, ColorProcessing> value) {
+                return DropdownMenuItem<Map<String, ColorProcessing>>(
+                  value: value,
+                  child: Text(value.keys.first), // We'll show the user the printer name.
+                );
+              }).toList(),
+            ),
+
+            // This will be the list of available resolutions to scan with.
+            const Text("Select scanner resolution"),
+            DropdownButton<Map<String, Resolution>>(
+              value: _selectedScanResolution, // Sets the option, this will update as the user makes a choice.
+              icon: const Icon(Icons.arrow_downward),
+              elevation: 16,
+              style: const TextStyle(color: Colors.deepPurple),
+              underline: Container(
+                height: 2,
+                color: Colors.deepPurpleAccent,
+              ),
+              onChanged: (Map<String, Resolution>? value) {
+                // This is called when the user selects an item.
+                setState(() {
+                  // When the user picks a resolution option we track it to use it later..
+                  _selectedScanResolution = value!;
+
+                });
+              },
+              // For every printer model we'll create a dropdown item for the user.
+              items: _scanResolutionOptions.map<DropdownMenuItem<Map<String, Resolution>>>((Map<String, Resolution> value) {
+                return DropdownMenuItem<Map<String, Resolution>>(
+                  value: value,
+                  child: Text(value.keys.first), // We'll show the user the printer name.
+                );
+              }).toList(),
             ),
 
             // This will be the list of available printer models to print with.
@@ -376,6 +456,15 @@ class _MyHomePageState extends State<MyHomePage> {
     ScanParameters scanParams = ScanParameters();
     // In this case we want a scan in a paper of size A6
     scanParams.documentSize = MediaSize.A6;
+    // Set the processing to the one selected by the user in the UI
+    // Note: The selected option only contains one key and one value so we can
+    // use first here.
+    scanParams.colorType = _selectedColorProcessing.values.first;
+    // Set the scanner resolution to match the one picked by the user.
+    // Since the resolutions options are maps we'll be using the value here.
+    // Note: The selected option only contains one key and one value so we can
+    // use first here.
+    scanParams.resolution = _selectedScanResolution.values.first;
 
     // Start scanning. When the scanning is complete each scanned paged will
     // be an entry in our outScannedPaths list.

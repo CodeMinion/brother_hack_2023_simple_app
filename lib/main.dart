@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io' as nativeFile;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:air_brother/air_brother.dart';
 import 'package:another_brother/label_info.dart';
 import 'package:another_brother/printer_info.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -108,8 +111,8 @@ class _MyHomePageState extends State<MyHomePage> {
             GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () {
-                // Open the file picker.
-                _pickImage();
+                // Start scan.
+                _performScan();
               },
               child: Container(
                 width: 200,
@@ -126,7 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       Center(child: Image.memory(_selectedFileBytes!))
                     ] else ...[
                       // If no image is selected we'll just display a text prompting the user to do so.
-                      const Center(child: Text("Tap to pick file")),
+                      const Center(child: Text("Tap to scan file")),
                     ]
                   ],
                 ),
@@ -344,6 +347,55 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   ///
+  /// Helper method that finds an available scanner, scans and
+  /// stores the image bytes to be printed later.
+  Future<void> _performScan() async {
+
+    // Try to find a scanner, if no scanner is found within 5 seconds (5000 milliseconds)
+    // the search stops and returns.
+    List<Connector> _fetchedDevices = await AirBrother.getNetworkDevices(5000);
+
+    // If no scanners are found we'll notify the user using a snackbard.
+    if (_fetchedDevices.isEmpty) {
+      // Show a message if no scanners were found.
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text("No scanners found."),
+        ),
+      ));
+      return;
+    }
+
+    // Get the first scanned found.
+    Connector scanner = _fetchedDevices.first;
+
+    // This is where we'll store the paths for the scanned files.
+    List<String> outScannedPaths = [];
+    // Scan Parameters are used to configure your scanner.
+    ScanParameters scanParams = ScanParameters();
+    // In this case we want a scan in a paper of size A6
+    scanParams.documentSize = MediaSize.A6;
+
+    // Start scanning. When the scanning is complete each scanned paged will
+    // be an entry in our outScannedPaths list.
+    JobState jobState = await scanner.performScan(scanParams, outScannedPaths);
+
+    // Obtain the first scanned page.
+    String firstScannedDocumentPath = outScannedPaths.first;
+
+
+    // Read the bytes so we may turn it into an image that we can then print.
+    Uint8List fileBytes = await getBytesFromPath(firstScannedDocumentPath);
+
+    // Update the UI with the image bytes.
+    setState(() {
+      _selectedFileBytes = fileBytes;
+    });
+
+  }
+
+  ///
   /// Helper function to convert a list of bytes representing an image
   /// into an image we can print.
   ///
@@ -353,5 +405,16 @@ class _MyHomePageState extends State<MyHomePage> {
       return completer.complete(img);
     });
     return completer.future;
+  }
+
+  ///
+  /// Helper function for reading the byts from a file path.
+  Future<Uint8List> getBytesFromPath(String path) async {
+    if (kIsWeb) {
+      // Not supported on web.
+      return Uint8List(0);
+    }
+
+    return await nativeFile.File(path).readAsBytes();
   }
 }

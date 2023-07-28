@@ -31,8 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
 
-  another_brother: #0.0.27
-    path: '../another_brother'
+  another_brother: 0.0.34
+    #path: '../another_brother'
 
 
   permission_handler: ^10.2.0

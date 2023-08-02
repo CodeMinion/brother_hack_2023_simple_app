@@ -319,9 +319,9 @@ class _MyHomePageState extends State<MyHomePage> {
   ///
   int _getOrdinalFromLabel(ALabelName label) {
     if (label is QL1100) {
-      QL1100.ordinalFromID(label.getId());
+      return QL1100.ordinalFromID(label.getId());
     } else if (label is QL700) {
-      QL700.ordinalFromID(label.getId());
+      return QL700.ordinalFromID(label.getId());
     }
 
     return 0;

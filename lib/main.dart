@@ -437,9 +437,9 @@ class _MyHomePageState extends State<MyHomePage> {
   ///
   int _getOrdinalFromLabel(ALabelName label) {
     if (label is QL1100) {
-      QL1100.ordinalFromID(label.getId());
+      return QL1100.ordinalFromID(label.getId());
     } else if (label is QL700) {
-      QL700.ordinalFromID(label.getId());
+      return QL700.ordinalFromID(label.getId());
     }
 
     return 0;
@@ -450,6 +450,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
+      withData: true,
       type: FileType.custom,
       // Set to custom so we may specify the file formats.
       allowedExtensions: [
